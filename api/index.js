@@ -8,8 +8,8 @@ export default async function handler(req, res) {
     dynamic: "dynamic.json"
   };
 
-  // Si no se envía endpoint, usar info.json por defecto
-  const file = validEndpoints[endpoint] || "info.json";
+  // Si no se envía endpoint, usar dynamic.json por defecto
+  const file = validEndpoints[endpoint] || "dynamic.json";
 
   try {
     const response = await fetch(`http://51.178.152.18:30120/${file}`);
@@ -19,3 +19,4 @@ export default async function handler(req, res) {
     res.status(500).json({ error: "Error fetching data" });
   }
 }
+

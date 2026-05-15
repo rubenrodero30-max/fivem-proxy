@@ -12,10 +12,16 @@ export default async function handler(req, res) {
   const file = validEndpoints[endpoint] || "dynamic.json";
 
   try {
+    // IP REAL DE TU SERVIDOR
     const response = await fetch(`http://134.255.233.8:30142/${file}`);
+
     const data = await response.json();
+
+    // Respuesta correcta
     res.status(200).json(data);
+
   } catch (error) {
+    // Si falla, devolvemos error
     res.status(500).json({ error: "Error fetching data" });
   }
 }

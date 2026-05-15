@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   const file = validEndpoints[endpoint] || "dynamic.json";
 
   try {
-    const response = await fetch(`http://51.178.152.18:30120/${file}`);
+    const response = await fetch(`http://134.255.233.8:30142/${file}`);
     const data = await response.json();
     res.status(200).json(data);
   } catch (error) {

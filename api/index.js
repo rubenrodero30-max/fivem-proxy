@@ -1,4 +1,10 @@
 export default async function handler(req, res) {
+
+  // CORS para permitir que WordPress lea la API
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
   const { endpoint } = req.query;
 
   // Endpoints válidos de FiveM
@@ -15,7 +21,15 @@ export default async function handler(req, res) {
     // IP REAL DE TU SERVIDOR
     const response = await fetch(`http://134.255.233.8:30142/${file}`);
 
-    const data = await response.json();
+    // Si el servidor no responde JSON válido, evitamos que explote
+    const text = await response.text();
+    let data;
+
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      return res.status(500).json({ error: "Invalid JSON from FiveM server" });
+    }
 
     // Respuesta correcta
     res.status(200).json(data);

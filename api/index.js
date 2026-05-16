@@ -1,6 +1,5 @@
 export const config = {
-  runtime: "edge",
-  regions: ["fra1"]
+  runtime: "nodejs18.x"
 };
 
 export default async function handler(req) {

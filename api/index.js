@@ -42,6 +42,10 @@ export default async function handler(req) {
     // 3. Decodificar UTF‑8 correctamente
     const decoder = new TextDecoder("utf-8");
     const text = decoder.decode(buffer);
+    if (!text.trim().startsWith("{")) {
+    return new Response(text, { status: 200, headers });
+   }
+
 
     // 4. Parsear JSON reparado
     let data;

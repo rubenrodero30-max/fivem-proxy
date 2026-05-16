@@ -5,25 +5,24 @@ export const config = {
 
 export default async function handler(req) {
 
-  // CORS
+  // CORS para Edge Runtime
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET",
     "Access-Control-Allow-Headers": "Content-Type"
   };
 
-  // Leer parámetros de la URL (Edge Runtime no usa req.query)
+  // Leer parámetros (Edge NO usa req.query)
   const { searchParams } = new URL(req.url);
   const endpoint = searchParams.get("endpoint");
 
-  // Endpoints válidos de FiveM
+  // Endpoints válidos
   const validEndpoints = {
     info: "info.json",
     players: "players.json",
     dynamic: "dynamic.json"
   };
 
-  // Si no se envía endpoint, usar dynamic.json por defecto
   const file = validEndpoints[endpoint] || "dynamic.json";
 
   try {
@@ -58,7 +57,7 @@ export default async function handler(req) {
     }
 
     // ============================
-    // 3. AÑADIR PING AL JSON
+    // 3. AÑADIR PING
     // ============================
     data.ping = ping;
 

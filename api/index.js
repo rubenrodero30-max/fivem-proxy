@@ -3,16 +3,24 @@ export const config = {
 };
 
 export default async function handler(req, res) {
-  // CORS
+  // ============================
+  // 1️⃣ CORS universal
+  // ============================
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // Leer endpoint
+  if (req.method === "OPTIONS") {
+    res.status(200).end();
+    return;
+  }
+
+  // ============================
+  // 2️⃣ Leer endpoint
+  // ============================
   const { searchParams } = new URL(req.url, `http://${req.headers.host}`);
   const endpoint = searchParams.get("endpoint");
 
-  // Endpoints válidos
   const validEndpoints = {
     info: "info.json",
     players: "players.json",
@@ -24,7 +32,7 @@ export default async function handler(req, res) {
 
   try {
     // ============================
-    // 1. MEDIR PING REAL
+    // 3️⃣ Medir ping real
     // ============================
     let ping = null;
     try {
@@ -36,45 +44,39 @@ export default async function handler(req, res) {
     }
 
     // ============================
-    // 2. OBTENER RESPUESTA RAW
+    // 4️⃣ Obtener respuesta RAW
     // ============================
     const response = await fetch(`${serverURL}/${file}`);
     const buffer = await response.arrayBuffer();
-
-    // ============================
-    // 3. DECODIFICAR UTF‑8
-    // ============================
     const decoder = new TextDecoder("utf-8");
-    let text = decoder.decode(buffer);
-
-    // Si el servidor devuelve texto que NO es JSON, mostrarlo tal cual
-    if (!text.trim().startsWith("{")) {
-      res.status(200).send(text);
-      return;
-    }
+    const text = decoder.decode(buffer).trim();
 
     // ============================
-    // 4. PARSEAR JSON
+    // 5️⃣ Detectar tipo de contenido
     // ============================
     let data;
     try {
       data = JSON.parse(text);
     } catch {
-      res.status(500).json({ error: "Invalid JSON after UTF-8 decode" });
+      // Si no es JSON, devolver texto plano
+      res.status(200).send(text);
       return;
     }
 
     // ============================
-    // 5. AÑADIR PING
+    // 6️⃣ Añadir ping y timestamp
     // ============================
-    data.ping = ping;
+    if (typeof data === "object" && !Array.isArray(data)) {
+      data.ping = ping;
+      data.timestamp = new Date().toISOString();
+    }
 
     // ============================
-    // 6. RESPUESTA FINAL
+    // 7️⃣ Respuesta final
     // ============================
     res.status(200).json(data);
 
   } catch (error) {
-    res.status(500).json({ error: "Error fetching data" });
+    res.status(500).json({ error: "Error al obtener datos del servidor", details: error.message });
   }
 }

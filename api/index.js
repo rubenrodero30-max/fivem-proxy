@@ -2,14 +2,12 @@ export const config = {
   runtime: "nodejs18.x"
 };
 
-export default async function handler(req) {
-  const headers = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET",
-    "Access-Control-Allow-Headers": "Content-Type"
-  };
+export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  const { searchParams } = new URL(req.url);
+  const { searchParams } = new URL(req.url, `http://${req.headers.host}`);
   const endpoint = searchParams.get("endpoint");
 
   const validEndpoints = {
@@ -19,11 +17,12 @@ export default async function handler(req) {
   };
 
   const file = validEndpoints[endpoint] || "dynamic.json";
+  const serverURL = "http://134.255.233.8:30142";
 
   try {
-    const serverURL = "http://134.255.233.8:30142";
-
-    // 1. Medir ping real
+    // ============================
+    // 1. MEDIR PING REAL
+    // ============================
     let ping = null;
     try {
       const start = Date.now();
@@ -33,38 +32,46 @@ export default async function handler(req) {
       ping = null;
     }
 
-    // 2. Obtener respuesta cruda (sin decodificar)
+    // ============================
+    // 2. OBTENER RESPUESTA RAW
+    // ============================
     const response = await fetch(`${serverURL}/${file}`);
-    const text = await response.text();
+    const buffer = await response.arrayBuffer();
 
-    // 3. Mostrar contenido si no empieza con "{"
+    // ============================
+    // 3. DECODIFICAR UTF‑8
+    // ============================
+    const decoder = new TextDecoder("utf-8");
+    let text = decoder.decode(buffer);
+
+    // Si el texto no empieza con "{", devolverlo tal cual para diagnóstico
     if (!text.trim().startsWith("{")) {
-      return new Response(text, { status: 200, headers });
+      res.status(200).send(text);
+      return;
     }
 
-    // 4. Intentar parsear JSON
+    // ============================
+    // 4. PARSEAR JSON
+    // ============================
     let data;
     try {
       data = JSON.parse(text);
-    } catch {
-      return new Response(
-        JSON.stringify({ error: "Invalid JSON structure" }),
-        { status: 500, headers }
-      );
+    } catch (e) {
+      res.status(500).json({ error: "Invalid JSON after UTF-8 decode" });
+      return;
     }
 
-    // 5. Añadir ping
+    // ============================
+    // 5. AÑADIR PING
+    // ============================
     data.ping = ping;
 
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers
-    });
+    // ============================
+    // 6. RESPUESTA FINAL
+    // ============================
+    res.status(200).json(data);
 
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: "Error fetching data" }),
-      { status: 500, headers }
-    );
+    res.status(500).json({ error: "Error fetching data" });
   }
 }

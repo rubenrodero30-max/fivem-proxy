@@ -4,7 +4,6 @@ export const config = {
 };
 
 export default async function handler(req) {
-
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET",
@@ -35,25 +34,22 @@ export default async function handler(req) {
       ping = null;
     }
 
-    // 2. Obtener respuesta como binario
+    // 2. Obtener respuesta cruda (sin decodificar)
     const response = await fetch(`${serverURL}/${file}`);
-    const buffer = await response.arrayBuffer();
+    const text = await response.text();
 
-    // 3. Decodificar UTF‑8 correctamente
-    const decoder = new TextDecoder("utf-8");
-    const text = decoder.decode(buffer);
+    // 3. Mostrar contenido si no empieza con "{"
     if (!text.trim().startsWith("{")) {
-    return new Response(text, { status: 200, headers });
-   }
+      return new Response(text, { status: 200, headers });
+    }
 
-
-    // 4. Parsear JSON reparado
+    // 4. Intentar parsear JSON
     let data;
     try {
       data = JSON.parse(text);
-    } catch (e) {
+    } catch {
       return new Response(
-        JSON.stringify({ error: "Invalid JSON after UTF-8 decode" }),
+        JSON.stringify({ error: "Invalid JSON structure" }),
         { status: 500, headers }
       );
     }

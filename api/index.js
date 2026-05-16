@@ -1,22 +1,19 @@
 export const config = {
   runtime: "edge",
-  regions: ["fra1"] // Frankfurt (Europa)
+  regions: ["fra1"]
 };
 
 export default async function handler(req) {
 
-  // CORS
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET",
     "Access-Control-Allow-Headers": "Content-Type"
   };
 
-  // Leer parámetros (Edge NO usa req.query)
   const { searchParams } = new URL(req.url);
   const endpoint = searchParams.get("endpoint");
 
-  // Endpoints válidos
   const validEndpoints = {
     info: "info.json",
     players: "players.json",
@@ -28,9 +25,7 @@ export default async function handler(req) {
   try {
     const serverURL = "http://134.255.233.8:30142";
 
-    // ============================
-    // 1. MEDIR PING REAL
-    // ============================
+    // 1. Medir ping real
     let ping = null;
     try {
       const start = Date.now();
@@ -40,36 +35,28 @@ export default async function handler(req) {
       ping = null;
     }
 
-    // ============================
-    // 2. OBTENER EL ENDPOINT REAL
-    // ============================
+    // 2. Obtener respuesta como binario
     const response = await fetch(`${serverURL}/${file}`);
-    let text = await response.text();
+    const buffer = await response.arrayBuffer();
 
-    // ============================
-    // 3. REPARAR JSON CORRUPTO (UTF‑8 FIX)
-    // ============================
-    // Convertir texto mal codificado a UTF‑8 válido
-    text = decodeURIComponent(escape(text));
+    // 3. Decodificar UTF‑8 correctamente
+    const decoder = new TextDecoder("utf-8");
+    const text = decoder.decode(buffer);
 
+    // 4. Parsear JSON reparado
     let data;
     try {
       data = JSON.parse(text);
-    } catch {
+    } catch (e) {
       return new Response(
-        JSON.stringify({ error: "Invalid JSON from FiveM server (fixed failed)" }),
+        JSON.stringify({ error: "Invalid JSON after UTF-8 decode" }),
         { status: 500, headers }
       );
     }
 
-    // ============================
-    // 4. AÑADIR PING
-    // ============================
+    // 5. Añadir ping
     data.ping = ping;
 
-    // ============================
-    // 5. RESPUESTA FINAL
-    // ============================
     return new Response(JSON.stringify(data), {
       status: 200,
       headers

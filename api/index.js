@@ -52,7 +52,7 @@ export default async function handler(req, res) {
     const text = decoder.decode(buffer).trim();
 
     // ============================
-    // 5️⃣ Detectar tipo de contenido
+    // 5️⃣ Intentar parsear JSON (objeto o array)
     // ============================
     let data;
     try {
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     }
 
     // ============================
-    // 6️⃣ Añadir ping y timestamp
+    // 6️⃣ Añadir ping SOLO si es objeto
     // ============================
     if (typeof data === "object" && !Array.isArray(data)) {
       data.ping = ping;
@@ -77,6 +77,9 @@ export default async function handler(req, res) {
     res.status(200).json(data);
 
   } catch (error) {
-    res.status(500).json({ error: "Error al obtener datos del servidor", details: error.message });
+    res.status(500).json({
+      error: "Error al obtener datos del servidor",
+      details: error.message
+    });
   }
 }

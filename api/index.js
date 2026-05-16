@@ -1,6 +1,6 @@
 export const config = {
   runtime: "edge",
-  regions: ["fra1"] // Frankfurt (Europa)
+  regions: ["fra1"] // Ejecutar en Europa (Frankfurt)
 };
 
 export default async function handler(req, res) {
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
       await fetch(`${serverURL}/info.json`);
       ping = Date.now() - start;
     } catch {
-      ping = null; // Si falla, no rompe nada
+      ping = null;
     }
 
     // ============================

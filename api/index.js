@@ -1,3 +1,8 @@
+export const config = {
+  runtime: "edge",
+  regions: ["fra1"] // Frankfurt (Europa)
+};
+
 export default async function handler(req, res) {
 
   // CORS para permitir que WordPress lea la API sin bloquearla

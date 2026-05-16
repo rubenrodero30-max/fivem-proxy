@@ -18,27 +18,46 @@ export default async function handler(req, res) {
   const file = validEndpoints[endpoint] || "dynamic.json";
 
   try {
-    // IP REAL DE TU SERVIDOR
-    const response = await fetch(`http://134.255.233.8:30142/${file}`);
+    const serverURL = "http://134.255.233.8:30142";
 
-    // Leemos la respuesta como texto para evitar errores con emojis
+    // ============================
+    // 1. MEDIR PING REAL
+    // ============================
+    let ping = null;
+    try {
+      const start = Date.now();
+      await fetch(`${serverURL}/info.json`);
+      ping = Date.now() - start;
+    } catch {
+      ping = null; // Si falla, no rompe nada
+    }
+
+    // ============================
+    // 2. OBTENER EL ENDPOINT REAL
+    // ============================
+    const response = await fetch(`${serverURL}/${file}`);
+
+    // Leer como texto para evitar errores con emojis
     const text = await response.text();
     let data;
 
     try {
-      // Intentamos parsear el JSON manualmente
       data = JSON.parse(text);
     } catch (e) {
-      // Si el JSON viene roto, devolvemos error controlado
       return res.status(500).json({ error: "Invalid JSON from FiveM server" });
     }
 
-    // Respuesta correcta
+    // ============================
+    // 3. AÑADIR PING AL JSON
+    // ============================
+    data.ping = ping;
+
+    // ============================
+    // 4. RESPUESTA FINAL
+    // ============================
     res.status(200).json(data);
 
   } catch (error) {
-    // Si falla, devolvemos error
     res.status(500).json({ error: "Error fetching data" });
   }
 }
-

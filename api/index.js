@@ -5,7 +5,7 @@ export const config = {
 
 export default async function handler(req) {
 
-  // CORS para Edge Runtime
+  // CORS
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET",
@@ -44,25 +44,31 @@ export default async function handler(req) {
     // 2. OBTENER EL ENDPOINT REAL
     // ============================
     const response = await fetch(`${serverURL}/${file}`);
-    const text = await response.text();
+    let text = await response.text();
+
+    // ============================
+    // 3. REPARAR JSON CORRUPTO (UTF‑8 FIX)
+    // ============================
+    // Convertir texto mal codificado a UTF‑8 válido
+    text = decodeURIComponent(escape(text));
 
     let data;
     try {
       data = JSON.parse(text);
     } catch {
       return new Response(
-        JSON.stringify({ error: "Invalid JSON from FiveM server" }),
+        JSON.stringify({ error: "Invalid JSON from FiveM server (fixed failed)" }),
         { status: 500, headers }
       );
     }
 
     // ============================
-    // 3. AÑADIR PING
+    // 4. AÑADIR PING
     // ============================
     data.ping = ping;
 
     // ============================
-    // 4. RESPUESTA FINAL
+    // 5. RESPUESTA FINAL
     // ============================
     return new Response(JSON.stringify(data), {
       status: 200,

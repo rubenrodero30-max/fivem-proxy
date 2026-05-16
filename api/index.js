@@ -3,9 +3,7 @@ export const config = {
 };
 
 export default async function handler(req, res) {
-  // ============================
-  // 1️⃣ CORS universal
-  // ============================
+  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -15,9 +13,6 @@ export default async function handler(req, res) {
     return;
   }
 
-  // ============================
-  // 2️⃣ Leer endpoint
-  // ============================
   const { searchParams } = new URL(req.url, `http://${req.headers.host}`);
   const endpoint = searchParams.get("endpoint");
 
@@ -31,9 +26,7 @@ export default async function handler(req, res) {
   const serverURL = "http://134.255.233.8:30142";
 
   try {
-    // ============================
-    // 3️⃣ Medir ping real
-    // ============================
+    // Medir ping
     let ping = null;
     try {
       const start = Date.now();
@@ -43,37 +36,30 @@ export default async function handler(req, res) {
       ping = null;
     }
 
-    // ============================
-    // 4️⃣ Obtener respuesta RAW
-    // ============================
+    // Obtener RAW
     const response = await fetch(`${serverURL}/${file}`);
     const buffer = await response.arrayBuffer();
-    const decoder = new TextDecoder("utf-8");
-    const text = decoder.decode(buffer).trim();
 
-    // ============================
-    // 5️⃣ Intentar parsear JSON (objeto o array)
-    // ============================
+    // Decodificar eliminando BOM
+    const decoder = new TextDecoder("utf-8");
+    let text = decoder.decode(buffer).replace(/^\uFEFF/, "").trim();
+
     let data;
+
+    // Intentar parsear SIEMPRE (OBJETO o ARRAY)
     try {
       data = JSON.parse(text);
     } catch {
-      // Si no es JSON, devolver texto plano
       res.status(200).send(text);
       return;
     }
 
-    // ============================
-    // 6️⃣ Añadir ping SOLO si es objeto
-    // ============================
+    // Añadir ping solo si es objeto
     if (typeof data === "object" && !Array.isArray(data)) {
       data.ping = ping;
       data.timestamp = new Date().toISOString();
     }
 
-    // ============================
-    // 7️⃣ Respuesta final
-    // ============================
     res.status(200).json(data);
 
   } catch (error) {

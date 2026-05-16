@@ -1,16 +1,20 @@
 export const config = {
   runtime: "edge",
-  regions: ["fra1"] // Ejecutar en Europa (Frankfurt)
+  regions: ["fra1"] // Frankfurt (Europa)
 };
 
-export default async function handler(req, res) {
+export default async function handler(req) {
 
-  // CORS para permitir que WordPress lea la API sin bloquearla
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  // CORS
+  const headers = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET",
+    "Access-Control-Allow-Headers": "Content-Type"
+  };
 
-  const { endpoint } = req.query;
+  // Leer parámetros de la URL (Edge Runtime no usa req.query)
+  const { searchParams } = new URL(req.url);
+  const endpoint = searchParams.get("endpoint");
 
   // Endpoints válidos de FiveM
   const validEndpoints = {
@@ -41,15 +45,16 @@ export default async function handler(req, res) {
     // 2. OBTENER EL ENDPOINT REAL
     // ============================
     const response = await fetch(`${serverURL}/${file}`);
-
-    // Leer como texto para evitar errores con emojis
     const text = await response.text();
-    let data;
 
+    let data;
     try {
       data = JSON.parse(text);
-    } catch (e) {
-      return res.status(500).json({ error: "Invalid JSON from FiveM server" });
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON from FiveM server" }),
+        { status: 500, headers }
+      );
     }
 
     // ============================
@@ -60,9 +65,15 @@ export default async function handler(req, res) {
     // ============================
     // 4. RESPUESTA FINAL
     // ============================
-    res.status(200).json(data);
+    return new Response(JSON.stringify(data), {
+      status: 200,
+      headers
+    });
 
   } catch (error) {
-    res.status(500).json({ error: "Error fetching data" });
+    return new Response(
+      JSON.stringify({ error: "Error fetching data" }),
+      { status: 500, headers }
+    );
   }
 }

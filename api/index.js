@@ -19,7 +19,8 @@ export default async function handler(req, res) {
   const validEndpoints = {
     info: "info.json",
     players: "players.json",
-    dynamic: "dynamic.json"
+    dynamic: "dynamic.json",
+    all: "all" // nuevo endpoint
   };
 
   const file = validEndpoints[endpoint] || "dynamic.json";
@@ -36,17 +37,39 @@ export default async function handler(req, res) {
       ping = null;
     }
 
-    // Obtener RAW
+    // 🔥 NUEVO BLOQUE: endpoint "all"
+    if (endpoint === "all") {
+      const [dynamicRes, playersRes] = await Promise.all([
+        fetch(`${serverURL}/dynamic.json`),
+        fetch(`${serverURL}/players.json`)
+      ]);
+
+      const dynamicBuffer = await dynamicRes.arrayBuffer();
+      const playersBuffer = await playersRes.arrayBuffer();
+
+      const decoder = new TextDecoder("utf-8");
+      const dynamicText = decoder.decode(dynamicBuffer).replace(/^\uFEFF/, "").trim();
+      const playersText = decoder.decode(playersBuffer).replace(/^\uFEFF/, "").trim();
+
+      const dynamic = JSON.parse(dynamicText);
+      const players = JSON.parse(playersText);
+
+      // Añadir ping y timestamp al objeto dinámico
+      dynamic.ping = ping;
+      dynamic.timestamp = new Date().toISOString();
+
+      return res.status(200).json({ dynamic, players });
+    }
+
+    // 🔹 Endpoint normal (info, players, dynamic)
     const response = await fetch(`${serverURL}/${file}`);
     const buffer = await response.arrayBuffer();
 
-    // Decodificar eliminando BOM
     const decoder = new TextDecoder("utf-8");
     let text = decoder.decode(buffer).replace(/^\uFEFF/, "").trim();
 
     let data;
 
-    // Intentar parsear SIEMPRE (OBJETO o ARRAY)
     try {
       data = JSON.parse(text);
     } catch {
@@ -54,7 +77,6 @@ export default async function handler(req, res) {
       return;
     }
 
-    // Añadir ping solo si es objeto
     if (typeof data === "object" && !Array.isArray(data)) {
       data.ping = ping;
       data.timestamp = new Date().toISOString();
